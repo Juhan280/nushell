@@ -30,16 +30,13 @@ export def copy52 [
 } --result "Hello"
 export def paste52 []: [nothing -> string] {
   try {
-    term query $'(ansi osc)52;c;?(ansi st)' -p $'(ansi osc)52;c;' -t (ansi st)
+    ^@TERMUX_PREFIX@/bin/termux-clipboard-get
   } catch {
     error make -u {
-      msg: "Terminal did not responds to OSC 52 paste request."
-      help: $"Check if your terminal supports OSC 52."
+      msg: "termux-clipboard-get failed to paste."
+      help: $"Make sure you have Termux:API app and termux-api package installed."
     }
   }
-  | decode
-  | decode base64
-  | decode
 }
 
 # Add a prefix to each line of the content to be copied
