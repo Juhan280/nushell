@@ -37,6 +37,15 @@ mod arboard_clipboard {
     }
 }
 
+#[cfg(target_os = "android")]
+pub fn create_clipboard(
+    _config: &Config,
+    _engine_state: &EngineState,
+    _stack: &mut Stack,
+) -> impl Clipboard {
+    super::termux::ClipBoardTermux::new()
+}
+
 #[cfg(target_os = "linux")]
 pub fn create_clipboard(
     config: &Config,
@@ -55,7 +64,12 @@ pub fn create_clipboard(
     arboard_clipboard::ArboardClipboard::new()
 }
 
-#[cfg(not(any(target_os = "linux", target_os = "macos", target_os = "windows")))]
+#[cfg(not(any(
+    target_os = "android",
+    target_os = "linux",
+    target_os = "macos",
+    target_os = "windows"
+)))]
 pub fn create_clipboard(_: Option<&nu_protocol::Value>) -> impl Clipboard {
     super::dummy::DummyClipboard::new()
 }
