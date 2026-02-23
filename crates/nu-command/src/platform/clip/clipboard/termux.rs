@@ -56,7 +56,7 @@ impl Clipboard for ClipBoardTermux {
             return Err(ShellError::GenericError {
                 error: "Failed to copy text.".into(),
                 msg: "".into(),
-                help: Some("Make sure you have Termux:Api addon installed.".into()),
+                help: Some("Make sure you have Termux:API add-on installed.".into()),
                 span: None,
                 inner: vec![],
             });
