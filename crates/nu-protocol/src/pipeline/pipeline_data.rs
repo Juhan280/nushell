@@ -238,12 +238,15 @@ impl PipelineData {
     ///
     /// Returns an `Err` with the original stream if the variant couldn't be converted to a stream
     /// variant. If the variant is already a stream variant, it is returned as-is.
-    pub fn try_into_stream(self, engine_state: &EngineState) -> Result<PipelineData, PipelineData> {
+    pub fn try_into_stream(
+        mut self,
+        engine_state: &EngineState,
+    ) -> Result<PipelineData, PipelineData> {
         let span = self.span().unwrap_or(Span::unknown());
         match self {
             PipelineData::ListStream(..) | PipelineData::ByteStream(..) => Ok(self),
-            PipelineData::Value(Value::List { .. } | Value::Range { .. }, ref metadata) => {
-                let metadata = metadata.clone();
+            PipelineData::Value(Value::List { .. } | Value::Range { .. }, ref mut metadata) => {
+                let metadata = metadata.take();
                 Ok(PipelineData::list_stream(
                     ListStream::new(self.into_iter(), span, engine_state.signals().clone()),
                     metadata,
@@ -273,6 +276,10 @@ impl PipelineData {
                             span,
                             engine_state.signals().clone(),
                         ),
+                        metadata,
+                    )),
+                    Ok(Value::Binary { val, .. }) => Ok(PipelineData::byte_stream(
+                        ByteStream::read_binary(val, span, engine_state.signals().clone()),
                         metadata,
                     )),
                     Ok(other) => Err(PipelineData::value(other, metadata)),
