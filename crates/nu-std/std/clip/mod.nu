@@ -43,7 +43,14 @@ export def copy52 [
   paste
 } --result "Hello"
 export def paste []: [nothing -> string] {
-  paste52
+  try {
+    ^@TERMUX_PREFIX@/bin/termux-clipboard-get
+  } catch {
+    error make -u {
+      msg: "termux-clipboard-get failed to paste."
+      help: "Make sure you have Termux:API app and termux-api package installed."
+    }
+  }
 }
 
 # Paste contents of system clipboard using OSC 52 request
