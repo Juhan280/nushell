@@ -8,7 +8,7 @@ use nu_protocol::{
     Config, EditBindings, FromValue, ParsedKeybinding, ParsedMenu, PipelineData, Record,
     ShellError, Span, Type, Value,
     debugger::WithoutDebug,
-    engine::{EngineState, Stack, StateWorkingSet},
+    engine::{Closure, EngineState, Stack, StateWorkingSet},
     extract_value,
 };
 use reedline::{
@@ -18,7 +18,8 @@ use reedline::{
     TraversalDirection, default_emacs_keybindings, default_vi_insert_keybindings,
     default_vi_normal_keybindings,
 };
-use std::{str::FromStr, sync::Arc};
+use serde::{Deserialize, Serialize};
+use std::{borrow::Cow, str::FromStr, sync::Arc};
 
 const DEFAULT_COMPLETION_MENU: &str = r#"
 {
@@ -1011,6 +1012,12 @@ fn parse_event(value: &Value, config: &Config) -> Result<Option<ReedlineEvent>, 
     }
 }
 
+#[derive(Serialize, Deserialize)]
+pub enum ClosureOrString<'a> {
+    String(String),
+    Closure(Cow<'a, Closure>),
+}
+
 fn event_from_record(
     name: &str,
     record: &Record,
@@ -1055,7 +1062,15 @@ fn event_from_record(
         Ok(RED::MenuPagePrevious) => ReedlineEvent::MenuPagePrevious,
         Ok(RED::ExecuteHostCommand) => {
             let cmd = extract_value("cmd", record, span)?;
-            ReedlineEvent::ExecuteHostCommand(cmd.to_expanded_string("", config))
+            let closure_or_string = cmd
+                .as_closure()
+                .map(|closure| ClosureOrString::Closure(Cow::Borrowed(closure)))
+                .unwrap_or_else(|_| ClosureOrString::String(cmd.to_expanded_string("", config)));
+
+            // TODO: maybe instead of serializing the whole thing, we store the data in a global
+            // lookup table and only provide the key
+            let str = serde_json::to_string(&closure_or_string).expect("this should not fail");
+            ReedlineEvent::ExecuteHostCommand(str)
         }
         Ok(RED::OpenEditor) => ReedlineEvent::OpenEditor,
         Ok(RED::ViChangeMode) => {
@@ -1121,7 +1136,7 @@ pub(crate) fn display_reedline_event(event: ReedlineEventDiscriminants) -> Optio
         RED::MenuRight => "MenuRight",
         RED::MenuPageNext => "MenuPageNext",
         RED::MenuPagePrevious => "MenuPagePrevious",
-        RED::ExecuteHostCommand => "ExecuteHostCommand cmd: <string>",
+        RED::ExecuteHostCommand => "ExecuteHostCommand cmd: <string> or <closure>",
         RED::OpenEditor => "OpenEditor",
         RED::ViChangeMode => "ViChangeMode mode: <string>",
         // Non-sensical for user configuration
