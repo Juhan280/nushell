@@ -758,6 +758,13 @@ fn loop_iteration(ctx: LoopContext) -> (bool, Stack, Reedline) {
                 let mut callee_stack = stack.captures_to_stack_preserve_out_dest(closure.captures);
                 let block = engine_state.get_block(closure.block_id).clone();
 
+                // set buffer and cursor position for `commandline` command
+                {
+                    let mut repl = engine_state.repl_state.lock().expect("repl state mutex");
+                    repl.cursor_pos = line_editor.current_insertion_point();
+                    repl.buffer = line_editor.current_buffer_contents().to_string();
+                }
+
                 match evaluate_block(
                     engine_state,
                     &mut callee_stack,
@@ -774,6 +781,8 @@ fn loop_iteration(ctx: LoopContext) -> (bool, Stack, Reedline) {
                         stack.set_last_error(&err);
                     }
                 };
+
+                line_editor = flush_engine_state_repl_buffer(engine_state, line_editor);
             }
             Err(_) => {}
         },
