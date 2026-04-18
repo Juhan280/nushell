@@ -318,6 +318,8 @@ struct LoopContext<'a> {
     hostname: Option<&'a str>,
 }
 
+// Is there anything else I can do to avoid this clippy lint?
+#[allow(clippy::too_many_arguments)]
 fn run_command(
     engine_state: &mut EngineState,
     stack: &mut Stack,
