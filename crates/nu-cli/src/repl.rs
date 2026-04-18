@@ -793,7 +793,7 @@ fn loop_iteration(ctx: LoopContext) -> (bool, Stack, Reedline) {
                     }
                 }
             } else {
-                warn!("Signal::HostCommand recieved invalid index: {index:?}");
+                warn!("Signal::HostCommand received invalid index: {index:?}");
             };
         }
         Ok(Signal::CtrlC) => {
